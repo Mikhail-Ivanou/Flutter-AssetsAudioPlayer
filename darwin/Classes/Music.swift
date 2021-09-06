@@ -513,19 +513,7 @@ public class Player : NSObject, AVAudioPlayerDelegate {
             print("mode " + mode.rawValue)
             print("displayNotification " + displayNotification.description)
             print("url: " + url.absoluteString)
-            
-            /* set session category and mode with options */
-            if #available(iOS 10.0, *) {
-                //try AVAudioSession.sharedInstance().setCategory(category, mode: mode, options: [.mixWithOthers])
-                try AVAudioSession.sharedInstance().setCategory(category, mode: .default, options: [])
-                try AVAudioSession.sharedInstance().setActive(true)
-            } else {
-                
-                try AVAudioSession.sharedInstance().setCategory(category)
-                try AVAudioSession.sharedInstance().setActive(true)
-                
-            }
-            #endif
+           
             
             var item : SlowMoPlayerItem
             if networkHeaders != nil && networkHeaders!.count > 0 {
@@ -590,6 +578,30 @@ public class Player : NSObject, AVAudioPlayerDelegate {
                         self?.setupMediaPlayerNotificationView(notificationSettings: notificationSettings, audioMetas: audioMetas, isPlaying: false)
                         #endif
                     }
+                    
+                    // Additional code to enable respectSilentMode from here.
+                    #if os(iOS)
+                    do{
+                        if #available(iOS 10.0, *) {
+                            try AVAudioSession.sharedInstance().setCategory(category, mode: .default, options: [])
+                            try AVAudioSession.sharedInstance().setActive(true)
+                        } else {
+                            try AVAudioSession.sharedInstance().setCategory(category)
+                            try AVAudioSession.sharedInstance().setActive(true)
+                        }
+                    } catch let errorSetCategory {
+                        result(FlutterError(
+                            code: "PLAY_ERROR",
+                            message: "Cannot play "+assetPath,
+                            details: errorSetCategory.localizedDescription)
+                        )
+                        self?.log(errorSetCategory.localizedDescription)
+                        print(errorSetCategory.localizedDescription)
+                        return;
+                    }
+                    #endif
+                    // To here.
+                    
                     
                     self?.setPlaySpeed(playSpeed: playSpeed)
                     
